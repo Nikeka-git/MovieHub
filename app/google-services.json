@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "937902036014",
+    "project_id": "cinetrack-7045b",
+    "storage_bucket": "cinetrack-7045b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:937902036014:android:9a46bf9306be30d0a93bbf",
+        "android_client_info": {
+          "package_name": "com.moviehub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBICGtXdA9_ppeu9axagTJp8s4ERxUdyM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

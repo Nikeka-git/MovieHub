@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MovieHub</string>
+    <string name="firebase_database_url">https://cinetrack-7045b-default-rtdb.firebaseio.com/</string>
+</resources>

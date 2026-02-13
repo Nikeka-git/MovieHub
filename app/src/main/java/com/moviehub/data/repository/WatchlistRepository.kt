@@ -48,6 +48,7 @@ class WatchlistRepository @Inject constructor(
             watchlistRef.child(userId).child(movieId.toString()).setValue(
                 mapOf(
                     "movieId" to movieId,
+                    "userId" to userId,
                     "addedAt" to item.addedAt
                 )
             ).await()
@@ -81,8 +82,12 @@ class WatchlistRepository @Inject constructor(
             snapshot.children.forEach { child ->
                 val movieId = child.key?.toIntOrNull() ?: return@forEach
                 val addedAt = child.child("addedAt").getValue(Long::class.java) ?: System.currentTimeMillis()
-                firebaseItems.add(WatchlistEntity(movieId, userId, addedAt))
-            }
+                firebaseItems.add(WatchlistEntity(
+                    id = 0,
+                    movieId = movieId,
+                    userId = userId,
+                    addedAt = addedAt
+                ))            }
 
             // Get local items
             val localItems = mutableListOf<WatchlistEntity>()
@@ -99,6 +104,7 @@ class WatchlistRepository @Inject constructor(
                 watchlistRef.child(userId).child(item.movieId.toString()).setValue(
                     mapOf(
                         "movieId" to item.movieId,
+                        "userId" to userId,
                         "addedAt" to item.addedAt
                     )
                 )

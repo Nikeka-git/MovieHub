@@ -8,10 +8,7 @@ import com.moviehub.data.remote.api.TmdbApi
 import com.moviehub.data.remote.safeApiCall
 import com.moviehub.domain.model.Genre
 import com.moviehub.domain.model.Movie
-import com.moviehub.data.repository.MovieRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,13 +24,13 @@ class MovieRepositoryImpl @Inject constructor(
     override fun getPopularMovies(page: Int): Flow<NetworkResult<List<Movie>>> = flow {
         emit(NetworkResult.Loading)
 
-        // Emit cached data first (offline-first)
         if (page == 1) {
-            val cached = movieDao.getRecentMovies(20)
-            cached.collect { cachedMovies ->
+            try {
+                val cachedMovies = movieDao.getRecentMovies(20).first()
                 if (cachedMovies.isNotEmpty()) {
                     emit(NetworkResult.Success(cachedMovies.map { it.toDomain() }))
                 }
+            } catch (e: Exception) {
             }
         }
 
@@ -48,7 +45,11 @@ class MovieRepositoryImpl @Inject constructor(
 
                 // Cache movies
                 if (page == 1) {
-                    movieDao.insertMovies(movies.map { it.toEntity() })
+                    try {
+                        movieDao.insertMovies(movies.map { it.toEntity() })
+                    } catch (e: Exception) {
+
+                    }
                 }
 
                 emit(NetworkResult.Success(movies))
@@ -77,15 +78,7 @@ class MovieRepositoryImpl @Inject constructor(
     override fun searchMovies(query: String, page: Int): Flow<NetworkResult<List<Movie>>> = flow {
         emit(NetworkResult.Loading)
 
-        // Search in cache for offline support
-        val cachedResults = movieDao.searchMovies(query)
-        cachedResults.collect { cached ->
-            if (cached.isNotEmpty()) {
-                emit(NetworkResult.Success(cached.map { it.toDomain() }))
-            }
-        }
-
-        // Search via API
+        // Fetch from API first
         when (val result = safeApiCall { api.searchMovies(query, page) }) {
             is NetworkResult.Success -> {
                 val genres = getGenresInternal()
@@ -103,10 +96,13 @@ class MovieRepositoryImpl @Inject constructor(
     override fun getMovieDetails(movieId: Int): Flow<NetworkResult<Movie>> = flow {
         emit(NetworkResult.Loading)
 
-        // Check cache first
-        val cached = movieDao.getMovieById(movieId)
-        if (cached != null) {
-            emit(NetworkResult.Success(cached.toDomain()))
+        try {
+            val cached = movieDao.getMovieById(movieId)
+            if (cached != null) {
+                emit(NetworkResult.Success(cached.toDomain()))
+            }
+        } catch (e: Exception) {
+
         }
 
         // Fetch from network
@@ -118,7 +114,11 @@ class MovieRepositoryImpl @Inject constructor(
                         val movie = detailsResult.data.toDomain(cast)
 
                         // Cache the movie
-                        movieDao.insertMovie(movie.toEntity())
+                        try {
+                            movieDao.insertMovie(movie.toEntity())
+                        } catch (e: Exception) {
+
+                        }
 
                         emit(NetworkResult.Success(movie))
                     }
@@ -192,7 +192,11 @@ class MovieRepositoryImpl @Inject constructor(
     override suspend fun refreshMovies() {
         // Clean old cache (older than 7 days)
         val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000)
-        movieDao.deleteOldMovies(weekAgo)
+        try {
+            movieDao.deleteOldMovies(weekAgo)
+        } catch (e: Exception) {
+
+        }
     }
 
     override fun observeCachedMovie(movieId: Int): Flow<Movie?> {

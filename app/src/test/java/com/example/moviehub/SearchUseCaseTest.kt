@@ -3,7 +3,7 @@ package com.example.moviehub
 import com.moviehub.domain.model.Movie
 import com.moviehub.domain.model.Genre
 import com.moviehub.domain.model.Cast
-import com.moviehub.domain.repository.MovieRepository
+import com.moviehub.data.repository.MovieRepository
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -106,7 +106,7 @@ class SearchUseCaseTest {
         val sorted = movies.sortedByDescending { it.voteAverage }
 
         // Then
-        assertEquals(9.0, sorted.first().voteAverage)
+        assertEquals(9.0, sorted.first().voteAverage, 0.001)
         assertEquals("Best Test Movie", sorted.first().title)
     }
 }

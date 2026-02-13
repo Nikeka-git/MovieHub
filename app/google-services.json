@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "937902036014",
+    "firebase_url": "https://cinetrack-7045b-default-rtdb.firebaseio.com",
     "project_id": "cinetrack-7045b",
     "storage_bucket": "cinetrack-7045b.firebasestorage.app"
   },

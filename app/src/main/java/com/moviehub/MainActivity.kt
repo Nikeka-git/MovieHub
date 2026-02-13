@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.moviehub.data.firebase.AuthService
@@ -33,12 +32,24 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val currentUser by authService.observeAuthState().collectAsState(initial = null)
 
-                    val startDestination = if (currentUser != null) {
-                        Screen.Movies.route
-                    } else {
-                        Screen.Login.route
+                    val startDestination = remember {
+                        if (authService.isUserLoggedIn()) {
+                            Screen.Movies.route
+                        } else {
+                            Screen.Login.route
+                        }
+                    }
+
+                    LaunchedEffect(Unit) {
+                        authService.observeAuthState().collect { user ->
+                            if (user == null && 
+                                navController.currentDestination?.route != Screen.Login.route) {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        }
                     }
 
                     MovieHubNavigation(

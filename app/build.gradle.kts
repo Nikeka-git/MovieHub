@@ -19,7 +19,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "TMDB_API_KEY", "\"${project.findProperty("5a5b87a2319d7a9c11d70f0e39114e81") ?: "YOUR_KEY_HERE"}\"")
+        buildConfigField("String", "TMDB_API_KEY", "\"${project.findProperty("TMDB_API_KEY") ?: "5a5b87a2319d7a9c11d70f0e39114e81"}\"")
         buildConfigField("String", "TMDB_BASE_URL", "\"https://api.themoviedb.org/3/\"")
         buildConfigField("String", "TMDB_IMAGE_BASE_URL", "\"https://image.tmdb.org/t/p/w500\"")
 
@@ -27,7 +27,6 @@ android {
             annotationProcessorOptions {
                 arguments["room.schemaLocation"] = "$projectDir/schemas"
                 arguments["room.incremental"] = "true"
-                arguments["room.expandProjection"] = "true"
             }
         }
     }
@@ -118,4 +117,13 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
 
+}
+
+kapt {
+    correctErrorTypes = true
+    useBuildCache = false
+
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
 }

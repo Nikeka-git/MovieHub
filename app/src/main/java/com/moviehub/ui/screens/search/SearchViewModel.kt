@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.moviehub.data.remote.NetworkResult
 import com.moviehub.domain.model.Genre
 import com.moviehub.domain.model.Movie
-import com.moviehub.domain.repository.MovieRepository
+import com.moviehub.data.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*

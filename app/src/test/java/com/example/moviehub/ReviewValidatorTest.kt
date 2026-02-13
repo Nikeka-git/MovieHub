@@ -104,6 +104,6 @@ class ReviewValidatorTest {
     }
 
     private fun roundToHalfStar(rating: Float): Float {
-        return (rating * 2).toInt() / 2.0f
+        return kotlin.math.round(rating * 2) / 2.0f
     }
 }

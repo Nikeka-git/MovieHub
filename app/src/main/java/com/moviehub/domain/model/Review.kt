@@ -2,11 +2,11 @@ package com.moviehub.domain.model
 
 data class Review(
     val id: String = "",
-    val movieId: Int,
-    val userId: String,
-    val userName: String,
-    val rating: Float,
-    val comment: String,
+    val movieId: Int = 0,
+    val userId: String = "",
+    val userName: String = "",
+    val rating: Float = 0f,
+    val comment: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {

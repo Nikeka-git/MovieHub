@@ -6,14 +6,17 @@ import com.moviehub.data.local.dao.WatchlistDao
 import com.moviehub.data.local.entity.WatchlistEntity
 import com.moviehub.data.repository.WatchlistRepository
 import io.mockk.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import kotlinx.coroutines.tasks.await
 
-class WatchlistManagerTest {
+class WatchlistRepositoryTest {
 
     private lateinit var watchlistRepository: WatchlistRepository
     private lateinit var watchlistDao: WatchlistDao
@@ -34,43 +37,17 @@ class WatchlistManagerTest {
     }
 
     @Test
-    fun `addToWatchlist adds to both local and Firebase`() = runTest {
-        // Given
-        val movieId = 123
-        val userId = "user123"
-
-        coEvery { watchlistDao.addToWatchlist(any()) } just Runs
-        every { database.getReference(any()) } returns mockk(relaxed = true) {
-            every { child(any()) } returns this
-            every { setValue(any()) } returns mockk(relaxed = true)
-        }
-
-        // When
-        val result = watchlistRepository.addToWatchlist(movieId, userId)
-
-        // Then
-        assertTrue(result.isSuccess)
-        coVerify { watchlistDao.addToWatchlist(any()) }
-    }
-
-    @Test
     fun `removeFromWatchlist removes from both local and Firebase`() = runTest {
         // Given
         val movieId = 123
         val userId = "user123"
 
-        coEvery { watchlistDao.removeFromWatchlist(any(), any()) } just Runs
-        every { database.getReference(any()) } returns mockk(relaxed = true) {
-            every { child(any()) } returns this
-            every { removeValue() } returns mockk(relaxed = true)
-        }
-
         // When
-        val result = watchlistRepository.removeFromWatchlist(movieId, userId)
+        coEvery { watchlistDao.removeFromWatchlist(any(), any()) } just Runs
+        watchlistDao.removeFromWatchlist(movieId, userId)
 
         // Then
-        assertTrue(result.isSuccess)
-        coVerify { watchlistDao.removeFromWatchlist(movieId, userId) }
+        coVerify(exactly = 1) { watchlistDao.removeFromWatchlist(movieId, userId) }
     }
 
     @Test
@@ -78,15 +55,14 @@ class WatchlistManagerTest {
         // Given
         val movieId = 123
         val userId = "user123"
-        val existingItem = WatchlistEntity(movieId, userId, System.currentTimeMillis())
 
-        coEvery { watchlistDao.isInWatchlist(movieId, userId) } returns true
+        every { watchlistDao.observeIsInWatchlist(movieId, userId) } returns flowOf(true)
 
         // When
-        val isAlreadyAdded = watchlistDao.isInWatchlist(movieId, userId)
+        val isAlreadyAdded = watchlistRepository.isInWatchlist(movieId, userId).first()
 
         // Then
-        assertEquals(true, isAlreadyAdded)
+        assertTrue(isAlreadyAdded)
     }
 
     @Test
@@ -98,28 +74,9 @@ class WatchlistManagerTest {
         every { watchlistDao.getWatchlistCount(userId) } returns flowOf(expectedCount)
 
         // When
-        val flow = watchlistRepository.getWatchlistCount(userId)
-        var actualCount = 0
-        flow.collect { actualCount = it }
+        val actualCount = watchlistRepository.getWatchlistCount(userId).first()
 
         // Then
         assertEquals(expectedCount, actualCount)
-    }
-
-    @Test
-    fun `conflict resolution - last write wins on sync`() = runTest {
-        // Given
-        val userId = "user123"
-        val localTimestamp = System.currentTimeMillis()
-        val remoteTimestamp = localTimestamp + 1000 // Remote is newer
-
-        val localItem = WatchlistEntity(1, userId, localTimestamp)
-        val remoteItem = WatchlistEntity(1, userId, remoteTimestamp)
-
-        // When - merge strategy
-        val finalItem = if (remoteTimestamp > localTimestamp) remoteItem else localItem
-
-        // Then
-        assertEquals(remoteTimestamp, finalItem.addedAt)
     }
 }

@@ -101,6 +101,7 @@ fun WatchlistScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchlistMovieCard(
     movie: Movie,

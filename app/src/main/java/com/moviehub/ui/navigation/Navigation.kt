@@ -139,12 +139,7 @@ fun MovieHubNavigation(
                 arguments = listOf(navArgument("movieId") { type = NavType.IntType })
             ) {
                 MovieDetailScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onLoginRequired = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Movies.route) { saveState = true }
-                        }
-                    }
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

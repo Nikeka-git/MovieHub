@@ -33,23 +33,21 @@ fun MoviesScreen(
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val scrollState = rememberLazyGridState()
 
-    // ИСПРАВЛЕНО: Правильная реализация infinite scroll
     LaunchedEffect(Unit) {
-        snapshotFlow { 
+        snapshotFlow {
             val layoutInfo = scrollState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
             val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            
-            // Возвращаем true если доскроллили до предпоследнего элемента
+
             lastVisible >= totalItems - 2 && totalItems > 0
         }
-        .distinctUntilChanged() // Избегаем дублирования событий
-        .filter { shouldLoad -> shouldLoad } // Только когда нужно загрузить
-        .collect {
-            if (!isLoadingMore) {
-                viewModel.loadMoreMovies()
+            .distinctUntilChanged()
+            .filter { shouldLoad -> shouldLoad }
+            .collect {
+                if (!isLoadingMore) {
+                    viewModel.loadMoreMovies()
+                }
             }
-        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -113,6 +111,7 @@ fun MoviesGrid(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieCard(
     movie: Movie,
@@ -125,7 +124,6 @@ fun MovieCard(
             .height(280.dp)
     ) {
         Column {
-            // ИСПРАВЛЕНО: безопасная обработка posterPath
             AsyncImage(
                 model = movie.posterPath?.let { "${BuildConfig.TMDB_IMAGE_BASE_URL}$it" },
                 contentDescription = movie.title,
@@ -152,7 +150,6 @@ fun MovieCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // ИСПРАВЛЕНО: безопасная обработка releaseDate
                     Text(
                         text = if (movie.releaseDate.length >= 4) {
                             movie.releaseDate.take(4)

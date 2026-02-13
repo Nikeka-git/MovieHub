@@ -1,6 +1,5 @@
 package com.moviehub.ui.screens.detail
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -23,59 +22,41 @@ import com.moviehub.domain.model.Review
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 
-private const val TAG = "MovieDetailScreen"
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
     onBackClick: () -> Unit,
-    onLoginRequired: () -> Unit,
     viewModel: MovieDetailViewModel = hiltViewModel()
 ) {
-    Log.d(TAG, "MovieDetailScreen composed")
-
     val uiState by viewModel.uiState.collectAsState()
     val reviews by viewModel.reviews.collectAsState()
     val isInWatchlist by viewModel.isInWatchlist.collectAsState()
     val averageRating by viewModel.averageRating.collectAsState()
-    val isUserLoggedIn by viewModel.isUserLoggedIn.collectAsState()
-    val watchlistError by viewModel.watchlistError.collectAsState()
+
+    // НОВОЕ: Состояние отправки отзыва
     val reviewSubmitState by viewModel.reviewSubmitState.collectAsState()
 
     var showReviewDialog by remember { mutableStateOf(false) }
-    var showGuestDialog by remember { mutableStateOf(false) }
 
+    // НОВОЕ: SnackbarHost для отображения сообщений
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Показываем ошибку watchlist через тот же snackbar
-    LaunchedEffect(watchlistError) {
-        watchlistError?.let { error ->
-            snackbarHostState.showSnackbar(message = error, duration = SnackbarDuration.Short)
-            viewModel.clearWatchlistError()
-        }
-    }
-
-    LaunchedEffect(reviewSubmitState) {
-        Log.d(TAG, "reviewSubmitState changed: $reviewSubmitState")
-    }
-
+    // НОВОЕ: Обработка состояния отправки отзыва
     LaunchedEffect(reviewSubmitState) {
         when (val state = reviewSubmitState) {
             is ReviewSubmitState.Success -> {
-                Log.d(TAG, "Showing success snackbar: ${state.message}")
                 snackbarHostState.showSnackbar(
                     message = state.message,
                     duration = SnackbarDuration.Short
                 )
             }
             is ReviewSubmitState.Error -> {
-                Log.e(TAG, "Showing error snackbar: ${state.message}")
                 snackbarHostState.showSnackbar(
                     message = state.message,
                     duration = SnackbarDuration.Long
                 )
             }
-            else -> {}
+            else -> { /* Игнорируем Loading и Idle */ }
         }
     }
 
@@ -92,18 +73,12 @@ fun MovieDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    Log.d(TAG, "FAB clicked - isUserLoggedIn: $isUserLoggedIn")
-                    if (isUserLoggedIn) {
-                        showReviewDialog = true
-                    } else {
-                        showGuestDialog = true
-                    }
-                }
+                onClick = { showReviewDialog = true }
             ) {
                 Icon(Icons.Default.RateReview, contentDescription = "Add Review")
             }
         },
+        // НОВОЕ: Добавляем SnackbarHost
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         }
@@ -148,53 +123,24 @@ fun MovieDetailScreen(
         }
     }
 
-    // Диалог для гостей — предлагаем войти в аккаунт
-    if (showGuestDialog) {
-        AlertDialog(
-            onDismissRequest = { showGuestDialog = false },
-            title = { Text("Sign in required") },
-            text = {
-                Text("You need to be signed in to leave a review. Would you like to go to the login screen?")
-            },
-            confirmButton = {
-                Button(onClick = {
-                    showGuestDialog = false
-                    onLoginRequired()
-                }) {
-                    Text("Sign In")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showGuestDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    LaunchedEffect(showReviewDialog) {
-        Log.d(TAG, "showReviewDialog changed: $showReviewDialog")
-    }
-
+    // ОБНОВЛЕНО: Диалог с индикатором загрузки
     if (showReviewDialog) {
-        Log.d(TAG, "Showing ReviewDialog - isSubmitting: ${reviewSubmitState is ReviewSubmitState.Loading}")
         ReviewDialog(
             isSubmitting = reviewSubmitState is ReviewSubmitState.Loading,
             onDismiss = {
-                Log.d(TAG, "ReviewDialog dismissed")
                 showReviewDialog = false
                 viewModel.resetReviewSubmitState()
             },
             onSubmit = { rating, comment ->
-                Log.d(TAG, "🔵 ReviewDialog onSubmit called - rating: $rating, comment: '$comment'")
                 viewModel.addReview(rating, comment)
+                // Не закрываем диалог сразу, чтобы показать индикатор загрузки
             }
         )
     }
 
+    // НОВОЕ: Закрываем диалог при успешной отправке
     LaunchedEffect(reviewSubmitState) {
         if (reviewSubmitState is ReviewSubmitState.Success) {
-            Log.d(TAG, "Success state detected - closing dialog")
             showReviewDialog = false
         }
     }
@@ -213,6 +159,7 @@ fun MovieDetailContent(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
+        // Backdrop image
         item {
             AsyncImage(
                 model = "${BuildConfig.TMDB_IMAGE_BASE_URL}${movie.backdropPath ?: movie.posterPath}",
@@ -224,6 +171,7 @@ fun MovieDetailContent(
             )
         }
 
+        // Title and basic info
         item {
             Column(
                 modifier = Modifier
@@ -284,6 +232,7 @@ fun MovieDetailContent(
             }
         }
 
+        // Overview
         item {
             Column(
                 modifier = Modifier
@@ -303,6 +252,7 @@ fun MovieDetailContent(
             }
         }
 
+        // Cast
         if (movie.cast.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -327,6 +277,7 @@ fun MovieDetailContent(
             }
         }
 
+        // Reviews section
         item {
             Spacer(modifier = Modifier.height(24.dp))
             Row(
@@ -360,6 +311,7 @@ fun MovieDetailContent(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        // Reviews list
         items(reviews) { review ->
             ReviewCard(review = review)
         }
@@ -461,17 +413,11 @@ fun ReviewDialog(
     onDismiss: () -> Unit,
     onSubmit: (Float, String) -> Unit
 ) {
-    Log.d(TAG, "ReviewDialog composed - isSubmitting: $isSubmitting")
-
     var rating by remember { mutableStateOf(3f) }
     var comment by remember { mutableStateOf("") }
 
-    val isButtonEnabled = comment.isNotBlank() && !isSubmitting
-
     AlertDialog(
-        onDismissRequest = {
-            if (!isSubmitting) onDismiss()
-        },
+        onDismissRequest = { if (!isSubmitting) onDismiss() },
         title = { Text("Write a Review") },
         text = {
             Column {
@@ -490,13 +436,13 @@ fun ReviewDialog(
                     value = comment,
                     onValueChange = { comment = it },
                     label = { Text("Your review") },
-                    placeholder = { Text("Write your thoughts about this movie...") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 5,
                     enabled = !isSubmitting
                 )
 
+                // НОВОЕ: Индикатор загрузки во время отправки
                 if (isSubmitting) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
@@ -514,14 +460,14 @@ fun ReviewDialog(
         confirmButton = {
             Button(
                 onClick = { onSubmit(rating, comment) },
-                enabled = isButtonEnabled
+                enabled = comment.isNotBlank() && !isSubmitting
             ) {
                 Text("Submit")
             }
         },
         dismissButton = {
             TextButton(
-                onClick = { onDismiss() },
+                onClick = onDismiss,
                 enabled = !isSubmitting
             ) {
                 Text("Cancel")
